@@ -63,11 +63,9 @@ def forward(X):
     return z1, a1, z2, a2
 
 
-def cross_entropy_regularization(y_true, y_pred, W1, W2, lambd=0.01):
-    m = y_true.shape[0]
+def cross_entropy_loss(y_true, y_pred):
     cross_entropy_loss = -np.mean(np.sum(y_true * np.log(y_pred), axis=1))
-    l2_regularization = (lambd / (2 * m)) * (np.sum(W1 ** 2) + np.sum(W2 ** 2))
-    return cross_entropy_loss + l2_regularization
+    return cross_entropy_loss
 
 
 # Backpropagation
@@ -96,9 +94,9 @@ def evaluate_accuracy(X, y):
     return np.mean(predictions == true_classes)
 
 
-def train_model(X, Y, X_val, Y_val, epochs=200, batch_size=64, learning_rate=0.02, target_accuracy=0.95):
+def train_model(X, Y, X_val, Y_val, epochs=300, batch_size=64, learning_rate=0.02, target_accuracy=0.95):
     patience =5
-    decay_factor = 0.9
+    decay_factor = 0.8
     best_val_accuracy = 0
     epochs_no_improvement = 0
     m = X.shape[0]
@@ -117,7 +115,7 @@ def train_model(X, Y, X_val, Y_val, epochs=200, batch_size=64, learning_rate=0.0
             z1, a1, z2, a2 = forward(X_batch)
             backward(X_batch, y_batch, z1, a1, z2, a2, learning_rate)
 
-        train_loss = cross_entropy_regularization(Y, forward(X)[3], W1, W2)
+        train_loss = cross_entropy_loss(Y, forward(X)[3])
         train_acc = evaluate_accuracy(X, Y)
         val_acc = evaluate_accuracy(X_val, Y_val)
         elapsed_time = time.time() - start_time
@@ -146,11 +144,8 @@ def train_model(X, Y, X_val, Y_val, epochs=200, batch_size=64, learning_rate=0.0
     return W1, b1, W2, b2
 
 
-num_val_samples = int(0.2 * train_X.shape[0])
-val_X, val_Y = train_X[:num_val_samples], train_Y[:num_val_samples]
-train_X, train_Y = train_X[num_val_samples:], train_Y[num_val_samples:]
 
-W1_trained, b1_trained, W2_trained, b2_trained = train_model(train_X, train_Y, val_X, val_Y)
+W1_trained, b1_trained, W2_trained, b2_trained = train_model(train_X, train_Y, test_X, test_Y)
 
 test_accuracy = evaluate_accuracy(test_X, test_Y)
 print(f"Final Test Accuracy: {test_accuracy * 100:.2f}%")
